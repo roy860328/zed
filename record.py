@@ -19,6 +19,7 @@
 ########################################################################
 
 import sys
+import os
 import pyzed.sl as sl
 from signal import signal, SIGINT
 
@@ -45,7 +46,7 @@ def main():
         print(repr(status))
         exit(1)
 
-    path_output = sys.argv[1]
+    path_output = sys.argv[1] + "/" + get_last_file_index(sys.argv[1]) +".svo"
     recording_param = sl.RecordingParameters(path_output, sl.SVO_COMPRESSION_MODE.H264)
     err = cam.enable_recording(recording_param)
     if err != sl.ERROR_CODE.SUCCESS:
@@ -60,6 +61,13 @@ def main():
         if cam.grab(runtime) == sl.ERROR_CODE.SUCCESS :
             frames_recorded += 1
             print("Frame count: " + str(frames_recorded), end="\r")
+
+def get_last_file_index(path):
+    last = "0"
+    for f in os.listdir(path):
+        last = f.split(".")[0]
+    last = int(last)+1
+    return str(last)
 
 if __name__ == "__main__":
     main()
