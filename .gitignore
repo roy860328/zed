@@ -2,3 +2,4 @@
 *.svo
 build/
 pyzed/
+svo/
