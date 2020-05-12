@@ -1,5 +1,7 @@
 import sys
 import os
+import time
+import numpy as np
 import pyzed.sl as sl
 import cv2
 
@@ -46,14 +48,13 @@ def start_read_svo(filepath):
                 cam.retrieve_image(mat)
                 rgb = mat.get_data()
                 # cv2.imshow("RGB", rgb)
-                cam.retrieve_image(mat, sl.VIEW.DEPTH)
-                depth = mat.get_data()
+                depthimg = get_depth_img(cam, mat)
                 # cv2.imshow("Dep", depth)
                 key = cv2.waitKey(1)
                 if i>cam.get_svo_number_of_frames()*0.1\
-                 and i<cam.get_svo_number_of_frames()*0.9:
-                    cv2.imwrite(file.rsplit(".", 1)[0] + "_rgb_" + str(i) + ".png", rgb)
-                    cv2.imwrite(file.rsplit(".", 1)[0] + "_depth_" + str(i) + ".jpg", depth)
+                 and i<cam.get_svo_number_of_frames()*0.8:
+                    cv2.imwrite(file.rsplit(".", 1)[0] + "_rgb_" + str(i) + "_" + str(time.time()).split(".")[0] + ".png", rgb)
+                    cv2.imwrite(file.rsplit(".", 1)[0] + "_depth_" + str(i) + "_" + str(time.time()).split(".")[0] + ".jpg", depthimg)
                 i += 1
             else:
                 break
@@ -76,6 +77,22 @@ def print_camera_information(cam):
     print("Resolution: {0}, {1}.".format(round(cam.get_camera_information().camera_resolution.width, 2), cam.get_camera_information().camera_resolution.height))
     print("Camera FPS: {0}".format(cam.get_camera_information().camera_fps))
     print("Frame count: {0}.\n".format(cam.get_svo_number_of_frames()))
+
+
+def get_depth_img(cam, mat):
+    cam.retrieve_measure(mat, sl.MEASURE.DEPTH)
+    depth = mat.get_data()
+    depth_img = _distance_to_0_255(cam, depth)
+    return depth_img
+
+def _distance_to_0_255(cam, depth_list):
+    min_dis = cam.get_init_parameters().depth_minimum_distance
+    max_dis = cam.get_init_parameters().depth_maximum_distance
+    depth_list = np.nan_to_num(depth_list, posinf=max_dis, neginf=min_dis)
+    depth_list = (depth_list-min_dis)/(max_dis - min_dis)*255
+    depth_list = np.uint8(depth_list)
+    depth_list = cv2.cvtColor(depth_list,cv2.COLOR_GRAY2BGR)
+    return depth_list
 
 
 if __name__ == "__main__":

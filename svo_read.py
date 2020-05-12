@@ -23,6 +23,7 @@
     a JPEG or PNG file. Depth map and Point Cloud can also be saved into files.
 """
 import sys
+import numpy as np
 import pyzed.sl as sl
 import cv2
 
@@ -39,6 +40,7 @@ def main():
     input_type = sl.InputType()
     input_type.set_from_svo_file(filepath)
     init = sl.InitParameters(input_t=input_type, svo_real_time_mode=False)
+    init.depth_mode = sl.DEPTH_MODE.ULTRA
     cam = sl.Camera()
     status = cam.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
@@ -46,6 +48,7 @@ def main():
         exit()
 
     runtime = sl.RuntimeParameters()
+    runtime.sensing_mode = sl.SENSING_MODE.FILL
     mat = sl.Mat()
 
     key = ''
@@ -56,10 +59,17 @@ def main():
         if err == sl.ERROR_CODE.SUCCESS:
             cam.retrieve_image(mat)
             cv2.imshow("RGB", mat.get_data())
-            cam.retrieve_image(mat, sl.VIEW.DEPTH)
-            cv2.imshow("Dep", mat.get_data())
+            # cam.retrieve_image(mat, sl.VIEW.DEPTH)
+            depthimg = get_depth_img(cam, mat)
+            
+            cv2.imshow("Dep", depthimg)
             key = cv2.waitKey(1)
             saving_image(key, mat)
+            if key == 48:
+                while True:
+                    key = cv2.waitKey(1)
+                    if key == 49:
+                        break
         else:
             key = cv2.waitKey(1)
     cv2.destroyAllWindows()
@@ -68,31 +78,38 @@ def main():
     cam.close()
     print("\nFINISH")
 
+def get_depth_img(cam, mat):
+    cam.retrieve_measure(mat, sl.MEASURE.DEPTH)
+    depth = mat.get_data()
+    depth_img = _distance_to_0_255(cam, depth)
+    return depth_img
+
+def _distance_to_0_255(cam, depth_list):
+    print("===  ===")
+    min_dis = cam.get_init_parameters().depth_minimum_distance
+    max_dis = cam.get_init_parameters().depth_maximum_distance
+    depth_list = np.nan_to_num(depth_list, posinf=max_dis, neginf=min_dis)
+    depth_list = (depth_list-min_dis)/(max_dis - min_dis)*255
+    depth_list = np.uint8(depth_list)
+    print(np.amax(depth_list))
+    print(np.amin(depth_list))
+    depth_list = cv2.cvtColor(depth_list,cv2.COLOR_GRAY2BGR)
+    return depth_list
 
 def print_camera_information(cam):
-    while True:
-        res = input("Do you want to display camera information? [y/n]: ")
-        if res == "y":
-            print()
-            print("Distorsion factor of the right cam before calibration: {0}.".format(
-                cam.get_camera_information().calibration_parameters_raw.right_cam.disto))
-            print("Distorsion factor of the right cam after calibration: {0}.\n".format(
-                cam.get_camera_information().calibration_parameters.right_cam.disto))
+    print()
+    print("Distorsion factor of the right cam before calibration: {0}.".format(
+        cam.get_camera_information().calibration_parameters_raw.right_cam.disto))
+    print("Distorsion factor of the right cam after calibration: {0}.\n".format(
+        cam.get_camera_information().calibration_parameters.right_cam.disto))
 
-            print("Confidence threshold: {0}".format(cam.get_runtime_parameters().confidence_threshold))
-            print("Depth min and max range values: {0}, {1}".format(cam.get_init_parameters().depth_minimum_distance,
-                                                                    cam.get_init_parameters().depth_maximum_distance)
+    print("Confidence threshold: {0}".format(cam.get_runtime_parameters().confidence_threshold))
+    print("Depth min and max range values: {0}, {1}".format(cam.get_init_parameters().depth_minimum_distance,
+                                                            cam.get_init_parameters().depth_maximum_distance)
 )
-            print("Resolution: {0}, {1}.".format(round(cam.get_camera_information().camera_resolution.width, 2), cam.get_camera_information().camera_resolution.height))
-            print("Camera FPS: {0}".format(cam.get_camera_information().camera_fps))
-            print("Frame count: {0}.\n".format(cam.get_svo_number_of_frames()))
-            break
-        elif res == "n":
-            print("Camera information not displayed.\n")
-            break
-        else:
-            print("Error, please enter [y/n].\n")
-
+    print("Resolution: {0}, {1}.".format(round(cam.get_camera_information().camera_resolution.width, 2), cam.get_camera_information().camera_resolution.height))
+    print("Camera FPS: {0}".format(cam.get_camera_information().camera_fps))
+    print("Frame count: {0}.\n".format(cam.get_svo_number_of_frames()))
 
 def saving_image(key, mat):
     if key == 115:
@@ -105,6 +122,7 @@ def saving_image(key, mat):
                 break
             else:
                 print("Help: you must enter the filepath + filename + PNG extension.")
+
 
 
 
