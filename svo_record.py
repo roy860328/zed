@@ -21,6 +21,7 @@
 import sys
 import os
 import pyzed.sl as sl
+import time
 from signal import signal, SIGINT
 
 cam = sl.Camera()
@@ -65,7 +66,8 @@ def main():
 def get_last_file_index(path):
     last = "0"
     for f in os.listdir(path):
-        last = f.split(".")[0]
+        if int(last) < int(f.split(".")[0]):
+            last = f.split(".")[0]
     last = int(last)+1
     return str(last)
 
