@@ -39,6 +39,8 @@ def main():
     input_type = sl.InputType()
     input_type.set_from_svo_file(filepath)
     init = sl.InitParameters(input_t=input_type, svo_real_time_mode=False)
+    init.camera_resolution = sl.RESOLUTION.HD720
+    init.camera_resolution = sl.RESOLUTION.HD1080
     cam = sl.Camera()
     status = cam.open(init)
     if status != sl.ERROR_CODE.SUCCESS:

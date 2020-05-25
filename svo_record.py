@@ -21,7 +21,7 @@
 import sys
 import os
 import pyzed.sl as sl
-import time
+import cv2
 from signal import signal, SIGINT
 
 cam = sl.Camera()
@@ -40,6 +40,7 @@ def main():
 
     init = sl.InitParameters()
     init.camera_resolution = sl.RESOLUTION.HD720
+    init.camera_resolution = sl.RESOLUTION.HD1080
     # init.depth_mode = sl.DEPTH_MODE.NONE
 
     status = cam.open(init)
@@ -48,6 +49,9 @@ def main():
         exit(1)
 
     path_output = sys.argv[1] + "/" + get_last_file_index(sys.argv[1]) +".svo"
+    # 檔案大小差距很大
+    # recording_param = sl.RecordingParameters(path_output, sl.SVO_COMPRESSION_MODE.LOSSLESS)
+    # 影像損失程度不高
     recording_param = sl.RecordingParameters(path_output, sl.SVO_COMPRESSION_MODE.H264)
     err = cam.enable_recording(recording_param)
     if err != sl.ERROR_CODE.SUCCESS:
@@ -55,12 +59,18 @@ def main():
         exit(1)
 
     runtime = sl.RuntimeParameters()
+    mat = sl.Mat()
     print("SVO is Recording, use Ctrl-C to stop.")
     frames_recorded = 0
 
     while True:
         if cam.grab(runtime) == sl.ERROR_CODE.SUCCESS :
             frames_recorded += 1
+            cam.retrieve_image(mat)
+            cv2.imshow("RGB", mat.get_data())
+            cam.retrieve_image(mat, sl.VIEW.DEPTH)
+            cv2.imshow("Dep", mat.get_data())
+            key = cv2.waitKey(1)
             print("Frame count: " + str(frames_recorded), end="\r")
 
 def get_last_file_index(path):
