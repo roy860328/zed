@@ -9,7 +9,8 @@ import cv2
 def main():
 
     path = ["./svo/down/", "./svo/up/", "./svo/obstacle/", "./svo/flatten/", 
-            "./svo/test_down/", "./svo/test_up/", "./svo/test_obstacle/", "./svo/test_flatten/"]
+            "./svo/test_down/", "./svo/test_up/", "./svo/test_obstacle/", "./svo/test_flatten/",
+            "./svo/test_purity/"]
     # path = ["./svo/obstacle/", "./svo/flatten/"]
     for filepath in path:
         start_read_svo(filepath)
@@ -52,9 +53,10 @@ def start_read_svo(filepath):
                 # cv2.imshow("Dep", depth)
                 key = cv2.waitKey(1)
                 if i>cam.get_svo_number_of_frames()*0.1\
-                 and i<cam.get_svo_number_of_frames()*0.8:
-                    cv2.imwrite(file.rsplit(".", 1)[0] + "_rgb_" + str(i) + "_" + str(time.time()).split(".")[0] + ".png", rgb)
-                    cv2.imwrite(file.rsplit(".", 1)[0] + "_depth_" + str(i) + "_" + str(time.time()).split(".")[0] + ".jpg", depthimg)
+                 and i<cam.get_svo_number_of_frames()*0.75:
+                    t = str(time.time()).split(".")[0]
+                    cv2.imwrite(file.rsplit(".", 1)[0] + "_rgb_" + str(i) + "_" + t + ".png", rgb)
+                    cv2.imwrite(file.rsplit(".", 1)[0] + "_depth_" + str(i) + "_" + t + ".jpg", depthimg)
                 i += 1
             else:
                 break

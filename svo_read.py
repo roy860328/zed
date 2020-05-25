@@ -85,14 +85,11 @@ def get_depth_img(cam, mat):
     return depth_img
 
 def _distance_to_0_255(cam, depth_list):
-    print("===  ===")
     min_dis = cam.get_init_parameters().depth_minimum_distance
     max_dis = cam.get_init_parameters().depth_maximum_distance
     depth_list = np.nan_to_num(depth_list, posinf=max_dis, neginf=min_dis)
     depth_list = (depth_list-min_dis)/(max_dis - min_dis)*255
     depth_list = np.uint8(depth_list)
-    print(np.amax(depth_list))
-    print(np.amin(depth_list))
     depth_list = cv2.cvtColor(depth_list,cv2.COLOR_GRAY2BGR)
     return depth_list
 
